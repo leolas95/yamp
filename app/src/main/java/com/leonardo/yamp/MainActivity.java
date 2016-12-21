@@ -12,6 +12,7 @@ import android.widget.Toast;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import android.os.Handler;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -33,9 +34,27 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mediaPlayer = null;
-
+        mediaPlayer = new MediaPlayer();
         seekbar = (SeekBar) findViewById(R.id.seekbar);
+
+        seekbar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (mediaPlayer != null && fromUser)
+                    mediaPlayer.seekTo(progress);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                // Nothing
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                // Nothing
+            }
+        });
     }
 
 
@@ -83,14 +102,16 @@ public class MainActivity extends AppCompatActivity {
         if (mediaPlayer == null)
             return;
 
-        if (mediaPlayer.isPlaying())
+        if (mediaPlayer.isPlaying()) {
             mediaPlayer.pause();
+        }
         else
             mediaPlayer.start();
     }
 
     public void stopMusic(View v) {
         if (mediaPlayer != null) {
+            seekbar.setProgress(0);
             mediaPlayer.stop();
             mediaPlayer = null;
         }
@@ -105,6 +126,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void playSelectedSong(Uri songUri) {
+
         // If the player is playing, then stop it.
         if (mediaPlayer != null && mediaPlayer.isPlaying())
             mediaPlayer.stop();
@@ -119,12 +141,29 @@ public class MainActivity extends AppCompatActivity {
 
             mediaPlayer.setDataSource(getApplicationContext(), songUri);
             mediaPlayer.prepare();
+            mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                @Override
+                public void onPrepared(MediaPlayer mp) {
+                    seekbar.setMax(mediaPlayer.getDuration());
+                }
+            });
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        seekbar.setMax(mediaPlayer.getDuration());
-        Toast.makeText(this, mediaPlayer.getDuration(), Toast.LENGTH_SHORT).show();
+        final Handler handler = new Handler();
+        MainActivity.this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (mediaPlayer != null) {
+                    int currentPosition = mediaPlayer.getCurrentPosition();
+                    Toast.makeText(MainActivity.this, "asd" + mediaPlayer.getCurrentPosition(), Toast.LENGTH_SHORT).show();
+                    seekbar.setProgress(currentPosition);
+                }
+                handler.postDelayed(this, 10);
+            }
+        });
+
         mediaPlayer.start();
     }
 
@@ -269,7 +308,4 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void seek(View v) {
-        mediaPlayer.seekTo(2000);
-    }
 }
