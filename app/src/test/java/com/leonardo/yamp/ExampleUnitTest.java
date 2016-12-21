@@ -1,4 +1,4 @@
-package com.example.mymediaplayer;
+package com.leonardo.yamp;
 
 import org.junit.Test;
 

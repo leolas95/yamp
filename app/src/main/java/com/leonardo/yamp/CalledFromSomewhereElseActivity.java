@@ -1,4 +1,4 @@
-package com.example.mymediaplayer;
+package com.leonardo.yamp;
 
 import android.content.Intent;
 import android.media.AudioManager;
