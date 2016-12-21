@@ -7,6 +7,7 @@
     <string name="next_song">Next Song</string>
     <string name="search_song">Search on device</string>
     <string name="start_playlist">Start playlist</string>
-    <string name="next_song_in_playlist">Next song in playlist</string>
+    <string name="previous_song_on_playlist">Previous song in playlist</string>
+    <string name="next_song_on_playlist">Next song in playlist</string>
     <string name="add_to_playlist">Add song to playlist</string>
 </resources>
