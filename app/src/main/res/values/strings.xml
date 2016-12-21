@@ -1,7 +1,5 @@
 <resources>
     <string name="app_name">Yamp</string>
-    <string name="do_i_wanna_know">Do I Wanna Know?</string>
-    <string name="three_doors_down">3 Doors Down</string>
     <string name="pause_music">Pause</string>
     <string name="stop_music">Stop</string>
     <string name="next_song">Next Song</string>

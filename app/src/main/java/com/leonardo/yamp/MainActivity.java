@@ -4,10 +4,10 @@ import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
-import android.support.v4.util.CircularArray;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.SeekBar;
 import android.widget.Toast;
 
 import java.io.IOException;
@@ -17,9 +17,11 @@ public class MainActivity extends AppCompatActivity {
 
     private MediaPlayer mediaPlayer;
 
+    private SeekBar seekbar;
+
     private final int MAX_PLAYLIST_LEN = 2;
 
-    public ArrayList<Uri> playList = new ArrayList<>(MAX_PLAYLIST_LEN);
+    private ArrayList<Uri> playList = new ArrayList<>(MAX_PLAYLIST_LEN);
 
     private int playlistIndex = -1;
 
@@ -32,7 +34,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mediaPlayer = null;
+
+        seekbar = (SeekBar) findViewById(R.id.seekbar);
     }
+
 
     @Override
     protected void onPause() {
@@ -91,11 +96,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Let the user select a song on the device and play it
-     *
-     * @param v
-     */
+    // Let's the user select a song from the device
     public void searchSong(View v) {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("audio/*");
@@ -109,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
             mediaPlayer.stop();
 
         // To change the data source we need to be in the idle state, so a reset is needed (or
-        // a creation if it does not exist.
+        // a creation if the player does not exist).
         try {
             if (mediaPlayer == null)
                 mediaPlayer = new MediaPlayer();
@@ -122,6 +123,8 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
+        seekbar.setMax(mediaPlayer.getDuration());
+        Toast.makeText(this, mediaPlayer.getDuration(), Toast.LENGTH_SHORT).show();
         mediaPlayer.start();
     }
 
@@ -129,6 +132,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (playList.isEmpty()) {
             Toast.makeText(this, "Empty playlist. Try adding a few songs first.", Toast.LENGTH_SHORT).show();
+            return;
         }
 
 
@@ -259,9 +263,13 @@ public class MainActivity extends AppCompatActivity {
                 if (resultCode == RESULT_OK) {
                     Uri songUri = data.getData();
                     playList.add(songUri);
-                    Toast.makeText(this, "Agregada " + songUri + ", playList size = " + playList.size(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Song added to playlist", Toast.LENGTH_SHORT).show();
                 }
                 break;
         }
+    }
+
+    public void seek(View v) {
+        mediaPlayer.seekTo(2000);
     }
 }
