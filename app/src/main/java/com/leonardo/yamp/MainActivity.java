@@ -4,9 +4,11 @@ import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.support.v4.util.CircularArray;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Toast;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -15,14 +17,11 @@ public class MainActivity extends AppCompatActivity {
 
     private MediaPlayer mediaPlayer;
 
-    private final int MAX_SONGS = 2;
-    private final int MAX_PLAYLIST_LEN = 5;
-
-    public int songs[] = new int[MAX_SONGS];
-    private int i = 0;
+    private final int MAX_PLAYLIST_LEN = 2;
 
     public ArrayList<Uri> playList = new ArrayList<>(MAX_PLAYLIST_LEN);
-    private int playlistIndex = 0;
+
+    private int playlistIndex = -1;
 
     private final int PICK_SONG_REQUEST = 1;
     private final int ADD_SONG_TO_PLAYLIST_REQUEST = 2;
@@ -33,59 +32,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mediaPlayer = null;
-        songs[0] = R.raw.three_doors_down;
-        songs[1] = R.raw.do_i_wanna_know;
-    }
-
-    public void playNextSong(View v) {
-        if (mediaPlayer == null) {
-            i = 0;
-            mediaPlayer = MediaPlayer.create(this, songs[i]);
-            mediaPlayer.start();
-            i++;
-            return;
-        }
-
-        if (i < MAX_SONGS) {
-            mediaPlayer.stop();
-            mediaPlayer = null;
-            mediaPlayer = MediaPlayer.create(this, songs[i]);
-            mediaPlayer.start();
-            i++;
-            return;
-        }
-
-        i = 0;
-        mediaPlayer.stop();
-        mediaPlayer = null;
-        mediaPlayer = MediaPlayer.create(this, songs[i]);
-        mediaPlayer.start();
-        i++;
-    }
-
-    public void play3DoorsDown(View v) {
-        if (mediaPlayer == null) {
-            mediaPlayer = MediaPlayer.create(this, R.raw.three_doors_down);
-            mediaPlayer.start();
-        } else {
-            mediaPlayer.stop();
-            mediaPlayer = MediaPlayer.create(this, R.raw.three_doors_down);
-            mediaPlayer.start();
-
-        }
-        i++;
-    }
-
-    public void playDoIWannaKnow(View v) {
-        if (mediaPlayer == null) {
-            mediaPlayer = MediaPlayer.create(this, R.raw.do_i_wanna_know);
-            mediaPlayer.start();
-        } else {
-            mediaPlayer.stop();
-            mediaPlayer = MediaPlayer.create(this, R.raw.do_i_wanna_know);
-            mediaPlayer.start();
-        }
-        i++;
     }
 
     @Override
@@ -127,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /* Pausa o resume el audio */
+    // Pauses or resumes the music
     public void pauseMusic(View v) {
         if (mediaPlayer == null)
             return;
@@ -141,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
     public void stopMusic(View v) {
         if (mediaPlayer != null) {
             mediaPlayer.stop();
-            //mediaPlayer = null;
+            mediaPlayer = null;
         }
     }
 
@@ -157,35 +103,19 @@ public class MainActivity extends AppCompatActivity {
         startActivityForResult(intent, PICK_SONG_REQUEST);
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-
-        switch (requestCode) {
-            case PICK_SONG_REQUEST:
-                if (resultCode == RESULT_OK) {
-                    Uri songUri = data.getData();
-                    playSelectedSong(songUri);
-                }
-                break;
-            case ADD_SONG_TO_PLAYLIST_REQUEST:
-                if (resultCode == RESULT_OK) {
-                    Uri songUri = data.getData();
-                    playList.add(songUri);
-                }
-                break;
-        }
-    }
-
     public void playSelectedSong(Uri songUri) {
         // If the player is playing, then stop it.
         if (mediaPlayer != null && mediaPlayer.isPlaying())
             mediaPlayer.stop();
 
-        mediaPlayer = new MediaPlayer();
-
-        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-
+        // To change the data source we need to be in the idle state, so a reset is needed (or
+        // a creation if it does not exist.
         try {
+            if (mediaPlayer == null)
+                mediaPlayer = new MediaPlayer();
+            else
+                mediaPlayer.reset();
+
             mediaPlayer.setDataSource(getApplicationContext(), songUri);
             mediaPlayer.prepare();
         } catch (IOException e) {
@@ -202,18 +132,57 @@ public class MainActivity extends AppCompatActivity {
                 mediaPlayer.release();
                 mediaPlayer = null;
             }
-            mediaPlayer = MediaPlayer.create(this, playList.get(playlistIndex));
-            mediaPlayer.start();
 
+            mediaPlayer = MediaPlayer.create(this, playList.get(0));
+            mediaPlayer.start();
             mediaPlayer.setOnCompletionListener(listener);
         }
+    }
+
+    public void nextSongOnPlaylist(View v) {
+
+        if (playList.isEmpty()) {
+            Toast.makeText(this, "Empty playlist. Try adding a few songs first.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+
+        // If overflows, then just stop the music
+        if (playlistIndex+1 >= playList.size()) {
+            if (mediaPlayer != null)
+                mediaPlayer.stop();
+            return;
+        }
+
+        // It is safe to advance
+        playlistIndex++;
+
+        // This would be for a "circular" playlist; when reached the end, go back to the start.
+        //playlistIndex = (playlistIndex+1) % playList.size();
+
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+            mediaPlayer.stop();
+        }
+
+        try {
+            if (mediaPlayer == null)
+                mediaPlayer = new MediaPlayer();
+            else
+                mediaPlayer.reset();
+
+            mediaPlayer.setDataSource(getApplicationContext(), playList.get(playlistIndex));
+            mediaPlayer.prepare();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        mediaPlayer.start();
     }
 
     public void addToPlaylist(View v) {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("audio/*");
         intent.addCategory(Intent.CATEGORY_OPENABLE);
-        startActivityForResult(intent, PICK_SONG_REQUEST);
+        startActivityForResult(intent, ADD_SONG_TO_PLAYLIST_REQUEST);
     }
 
     private MediaPlayer.OnCompletionListener listener = new MediaPlayer.OnCompletionListener() {
@@ -235,4 +204,24 @@ public class MainActivity extends AppCompatActivity {
             mediaPlayer.start();
         }
     };
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        switch (requestCode) {
+            case PICK_SONG_REQUEST:
+                if (resultCode == RESULT_OK) {
+                    Uri songUri = data.getData();
+                    playSelectedSong(songUri);
+                }
+                break;
+            case ADD_SONG_TO_PLAYLIST_REQUEST:
+                if (resultCode == RESULT_OK) {
+                    Uri songUri = data.getData();
+                    playList.add(songUri);
+                    Toast.makeText(this, "Agregada " + songUri + ", playList size = " + playList.size(), Toast.LENGTH_SHORT).show();
+                }
+                break;
+        }
+    }
 }

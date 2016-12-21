@@ -9,29 +9,6 @@
     android:theme="@style/AlertDialog.AppCompat">
 
 
-    <!-- 3 doors down -->
-    <Button
-        android:id="@+id/three_doors_down_button"
-        android:layout_width="163dp"
-        android:layout_height="wrap_content"
-        android:text="@string/three_doors_down"
-        android:onClick="play3DoorsDown" />
-
-    <!--Do I Wanna Know-->
-    <Button
-        android:id="@+id/do_i_wanna_know_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/do_i_wanna_know"
-        android:onClick="playDoIWannaKnow" />
-
-    <!-- Next song -->
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/next_song"
-        android:onClick="playNextSong"/>
-
     <!-- Pause button -->
     <Button
         android:layout_width="wrap_content"
@@ -53,12 +30,20 @@
         android:text="@string/search_song"
         android:onClick="searchSong"/>
 
+    <!-- Start playlist button -->
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/start_playlist"
         android:onClick="startPlaylist"/>
 
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/next_song_in_playlist"
+        android:onClick="nextSongOnPlaylist"/>
+
+    <!-- Add song to playlist button -->
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
