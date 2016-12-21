@@ -37,10 +37,18 @@
         android:text="@string/start_playlist"
         android:onClick="startPlaylist"/>
 
+    <!-- Previous song on playlist button -->
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/next_song_in_playlist"
+        android:text="@string/previous_song_on_playlist"
+        android:onClick="previousSongOnPlaylist"/>
+
+    <!-- Next song on playlist button -->
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/next_song_on_playlist"
         android:onClick="nextSongOnPlaylist"/>
 
     <!-- Add song to playlist button -->

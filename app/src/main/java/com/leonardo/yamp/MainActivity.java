@@ -127,16 +127,56 @@ public class MainActivity extends AppCompatActivity {
 
     public void startPlaylist(View v) {
 
+        if (playList.isEmpty()) {
+            Toast.makeText(this, "Empty playlist. Try adding a few songs first.", Toast.LENGTH_SHORT).show();
+        }
+
+
         if (playList.size() >= 1) {
             if (mediaPlayer != null) {
                 mediaPlayer.release();
                 mediaPlayer = null;
             }
 
-            mediaPlayer = MediaPlayer.create(this, playList.get(0));
+            playlistIndex = 0;
+            mediaPlayer = MediaPlayer.create(this, playList.get(playlistIndex));
             mediaPlayer.start();
             mediaPlayer.setOnCompletionListener(listener);
         }
+    }
+
+    public void previousSongOnPlaylist(View v) {
+
+        if (playList.isEmpty()) {
+            Toast.makeText(this, "Empty playlist. Try adding a few songs first.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (playlistIndex-1 < 0) {
+            if (mediaPlayer != null)
+                mediaPlayer.stop();
+            return;
+        }
+
+        playlistIndex--;
+
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+            mediaPlayer.stop();
+        }
+
+        try {
+            if (mediaPlayer == null)
+                mediaPlayer = new MediaPlayer();
+            else
+                mediaPlayer.reset();
+
+            mediaPlayer.setDataSource(getApplicationContext(), playList.get(playlistIndex));
+            mediaPlayer.prepare();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        mediaPlayer.start();
+
     }
 
     public void nextSongOnPlaylist(View v) {
