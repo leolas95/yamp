@@ -7,6 +7,7 @@ import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
@@ -29,6 +30,8 @@ public class MainActivity extends AppCompatActivity {
     private final int PICK_SONG_REQUEST = 1;
     private final int ADD_SONG_TO_PLAYLIST_REQUEST = 2;
 
+    Button playOrPauseButton;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -36,6 +39,8 @@ public class MainActivity extends AppCompatActivity {
 
         mediaPlayer = new MediaPlayer();
         seekbar = (SeekBar) findViewById(R.id.seekbar);
+
+        playOrPauseButton = (Button) findViewById(R.id.play_pause_button);
 
         seekbar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
 
@@ -62,8 +67,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
 
-        if (mediaPlayer != null)
+        if (mediaPlayer != null) {
             mediaPlayer.pause();
+        }
     }
 
     @Override
@@ -99,14 +105,20 @@ public class MainActivity extends AppCompatActivity {
 
     // Pauses or resumes the music
     public void pauseMusic(View v) {
-        if (mediaPlayer == null)
+        if (mediaPlayer == null) {
             return;
+        }
 
+        // Was playing, pause it
         if (mediaPlayer.isPlaying()) {
             mediaPlayer.pause();
+            playOrPauseButton.setText("Play");
         }
-        else
+        // Was paused, play
+        else {
             mediaPlayer.start();
+            playOrPauseButton.setText("Pause");
+        }
     }
 
     public void stopMusic(View v) {
@@ -117,7 +129,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Let's the user select a song from the device
+    // Let the user select a song from the device
     public void searchSong(View v) {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("audio/*");
@@ -125,6 +137,10 @@ public class MainActivity extends AppCompatActivity {
         startActivityForResult(intent, PICK_SONG_REQUEST);
     }
 
+    /**
+     * Called from the PICK_SONG_REQUEST in onActivityResult()
+     * @param songUri the Uri of the song to play
+     */
     public void playSelectedSong(Uri songUri) {
 
         // If the player is playing, then stop it.
@@ -157,7 +173,6 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 if (mediaPlayer != null) {
                     int currentPosition = mediaPlayer.getCurrentPosition();
-                    Toast.makeText(MainActivity.this, "asd" + mediaPlayer.getCurrentPosition(), Toast.LENGTH_SHORT).show();
                     seekbar.setProgress(currentPosition);
                 }
                 handler.postDelayed(this, 10);
@@ -261,6 +276,10 @@ public class MainActivity extends AppCompatActivity {
         mediaPlayer.start();
     }
 
+    /**
+     * Called when the user wants to add a song from the device to the playlist
+     * @param v NOT USED. Necessary for the onClick methods declared on the activity's .xml file
+     */
     public void addToPlaylist(View v) {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("audio/*");
