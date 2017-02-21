@@ -41,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
     TextView tvSong;
 
     ListView playlistListView;
+    PlaylistViewAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,7 +49,6 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
-        playlistListView = (ListView) findViewById(R.id.listvPlaylist);
 
         mediaPlayer = new MediaPlayer();
         seekbar = (SeekBar) findViewById(R.id.seekbar);
@@ -83,6 +83,10 @@ public class MainActivity extends AppCompatActivity {
                 // Nothing
             }
         });
+
+        adapter = new PlaylistViewAdapter(this, playList);
+        playlistListView = (ListView) findViewById(R.id.listvPlaylist);
+        playlistListView.setAdapter(adapter);
     }
 
 
@@ -417,6 +421,7 @@ public class MainActivity extends AppCompatActivity {
 
                     Song newSong = obtainSongFromUriMetadata(songUri);
                     playList.add(newSong);
+                    adapter.notifyDataSetChanged();
                     Toast.makeText(this, newSong.getName() + " added to playlist", Toast.LENGTH_SHORT).show();
                 }
                 break;
