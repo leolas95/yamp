@@ -3,6 +3,7 @@ package com.leonardo.yamp;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.media.AudioManager;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
@@ -13,6 +14,8 @@ import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
+import java.io.File;
+import java.io.FileDescriptor;
 import java.io.IOException;
 import java.util.ArrayList;
 import android.os.Handler;
@@ -48,6 +51,13 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+
+                if (mediaPlayer == null || mediaPlayer.isPlaying() == false) {
+                    seekBar.setProgress(0);
+                    seekBar.setFocusable(false);
+                    return;
+                }
+
                 if (mediaPlayer != null && fromUser)
                     mediaPlayer.seekTo(progress);
             }
@@ -316,6 +326,7 @@ public class MainActivity extends AppCompatActivity {
      */
     private String getMimeType(Uri uri) {
         String mimeType = null;
+
         if (uri.getScheme().equals(ContentResolver.SCHEME_CONTENT)) {
             ContentResolver cr = getApplicationContext().getContentResolver();
             mimeType = cr.getType(uri);
@@ -351,6 +362,20 @@ public class MainActivity extends AppCompatActivity {
                                 Toast.LENGTH_SHORT).show();
                         return;
                     }
+
+                    MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+                    mmr.setDataSource(new File(songUri.getPath()).getAbsolutePath());
+
+                    String artist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
+                    String song = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
+
+                    if (artist == null)
+                        artist = "<unknown artist>";
+                    if (song == null)
+                        song = "<unknown song>";
+
+                    Toast.makeText(this, artist + " - " + song, Toast.LENGTH_SHORT).show();
+
 
                     playSelectedSong(songUri);
                 }
