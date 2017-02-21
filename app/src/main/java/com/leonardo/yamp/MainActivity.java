@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.webkit.MimeTypeMap;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -28,9 +29,7 @@ public class MainActivity extends AppCompatActivity {
     private SeekBar seekbar;
 
     private final int MAX_PLAYLIST_LEN = 5;
-
-    private ArrayList<Uri> playList = new ArrayList<>(MAX_PLAYLIST_LEN);
-
+    private ArrayList<Song> playList = new ArrayList<>(MAX_PLAYLIST_LEN);
     private int playlistIndex = -1;
 
     private final int PICK_SONG_REQUEST = 1;
@@ -41,11 +40,15 @@ public class MainActivity extends AppCompatActivity {
     TextView tvArtist;
     TextView tvSong;
 
+    ListView playlistListView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
+
+        playlistListView = (ListView) findViewById(R.id.listvPlaylist);
 
         mediaPlayer = new MediaPlayer();
         seekbar = (SeekBar) findViewById(R.id.seekbar);
@@ -201,11 +204,11 @@ public class MainActivity extends AppCompatActivity {
             }
 
             playlistIndex = 0;
-            mediaPlayer = MediaPlayer.create(this, playList.get(playlistIndex));
+            mediaPlayer = MediaPlayer.create(this, playList.get(playlistIndex).getUri());
             mediaPlayer.setOnCompletionListener(listener);
             seekbar.setMax(mediaPlayer.getDuration());
 
-            putSongDataOnView(playList.get(playlistIndex));
+            putSongDataOnView(playList.get(playlistIndex).getUri());
 
             mediaPlayer.start();
         }
@@ -248,7 +251,7 @@ public class MainActivity extends AppCompatActivity {
             else
                 mediaPlayer.reset();
 
-            mediaPlayer.setDataSource(getApplicationContext(), playList.get(playlistIndex));
+            mediaPlayer.setDataSource(getApplicationContext(), playList.get(playlistIndex).getUri());
             mediaPlayer.prepare();
             seekbar.setMax(mediaPlayer.getDuration());
             seekbar.setProgress(0);
@@ -256,7 +259,7 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        putSongDataOnView(playList.get(playlistIndex));
+        putSongDataOnView(playList.get(playlistIndex).getUri());
 
         mediaPlayer.start();
 
@@ -295,7 +298,7 @@ public class MainActivity extends AppCompatActivity {
             else
                 mediaPlayer.reset();
 
-            mediaPlayer.setDataSource(getApplicationContext(), playList.get(playlistIndex));
+            mediaPlayer.setDataSource(getApplicationContext(), playList.get(playlistIndex).getUri());
             mediaPlayer.prepare();
             seekbar.setMax(mediaPlayer.getDuration());
             seekbar.setProgress(0);
@@ -303,7 +306,7 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        putSongDataOnView(playList.get(playlistIndex));
+        putSongDataOnView(playList.get(playlistIndex).getUri());
 
         mediaPlayer.start();
     }
@@ -337,7 +340,7 @@ public class MainActivity extends AppCompatActivity {
             // it
             mediaPlayer.reset();
             try {
-                mediaPlayer.setDataSource(getApplicationContext(), playList.get(playlistIndex));
+                mediaPlayer.setDataSource(getApplicationContext(), playList.get(playlistIndex).getUri());
                 mediaPlayer.prepare();
                 seekbar.setMax(mediaPlayer.getDuration());
                 seekbar.setProgress(0);
@@ -345,7 +348,7 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
 
-            putSongDataOnView(playList.get(playlistIndex));
+            putSongDataOnView(playList.get(playlistIndex).getUri());
 
             mediaPlayer.start();
         }
@@ -412,9 +415,9 @@ public class MainActivity extends AppCompatActivity {
                         return;
                     }
 
-                    playList.add(songUri);
-                    Song addedSong = obtainSongFromUriMetadata(songUri);
-                    Toast.makeText(this, addedSong.getName() + " added to playlist", Toast.LENGTH_SHORT).show();
+                    Song newSong = obtainSongFromUriMetadata(songUri);
+                    playList.add(newSong);
+                    Toast.makeText(this, newSong.getName() + " added to playlist", Toast.LENGTH_SHORT).show();
                 }
                 break;
         }
@@ -453,6 +456,6 @@ public class MainActivity extends AppCompatActivity {
         if (title == null)
             title = "<unknown song>";
 
-        return new Song(title, artist);
+        return new Song(title, artist, songUri);
     }
 }

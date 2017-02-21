@@ -1,12 +1,16 @@
 package com.leonardo.yamp;
 
+import android.net.Uri;
+
 public class Song {
     private String name;
     private String artist;
+    private Uri uri;
 
-    public Song(String name, String artist) {
+    public Song(String name, String artist, Uri uri) {
         this.name = name;
         this.artist = artist;
+        this.uri = uri;
     }
 
     public void setName(String name) {
@@ -25,4 +29,7 @@ public class Song {
         return artist;
     }
 
+    public Uri getUri() {
+        return uri;
+    }
 }
