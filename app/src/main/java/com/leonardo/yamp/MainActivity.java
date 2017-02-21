@@ -2,13 +2,11 @@ package com.leonardo.yamp;
 
 import android.content.ContentResolver;
 import android.content.Intent;
-import android.media.AudioManager;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.webkit.MimeTypeMap;
 import android.widget.Button;
@@ -17,7 +15,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
-import java.io.FileDescriptor;
 import java.io.IOException;
 import java.util.ArrayList;
 import android.os.Handler;
@@ -25,6 +22,8 @@ import android.os.Handler;
 public class MainActivity extends AppCompatActivity {
 
     private MediaPlayer mediaPlayer;
+
+    private static Song currentSong = null;
 
     private SeekBar seekbar;
 
@@ -45,8 +44,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        Toast.makeText(this, "onCreate", Toast.LENGTH_SHORT).show();
 
         setContentView(R.layout.activity_main);
 
@@ -90,8 +87,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
 
-        Toast.makeText(this, "onPause", Toast.LENGTH_SHORT).show();
-
         if (mediaPlayer != null) {
             mediaPlayer.pause();
         }
@@ -101,8 +96,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        Toast.makeText(this, "onResume", Toast.LENGTH_SHORT).show();
-
         if (mediaPlayer != null)
             mediaPlayer.start();
 
@@ -111,8 +104,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
-        Toast.makeText(this, "onDestroy", Toast.LENGTH_SHORT).show();
 
         if (mediaPlayer != null) {
             mediaPlayer.stop();
@@ -203,7 +194,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-
         if (playList.size() >= 1) {
             if (mediaPlayer != null) {
                 mediaPlayer.release();
@@ -214,6 +204,9 @@ public class MainActivity extends AppCompatActivity {
             mediaPlayer = MediaPlayer.create(this, playList.get(playlistIndex));
             mediaPlayer.setOnCompletionListener(listener);
             seekbar.setMax(mediaPlayer.getDuration());
+
+            putSongDataOnView(playList.get(playlistIndex));
+
             mediaPlayer.start();
         }
 
@@ -262,6 +255,9 @@ public class MainActivity extends AppCompatActivity {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        putSongDataOnView(playList.get(playlistIndex));
+
         mediaPlayer.start();
 
     }
@@ -276,8 +272,10 @@ public class MainActivity extends AppCompatActivity {
 
         // If overflows, then just stop the music
         if (playlistIndex+1 >= playList.size()) {
-            if (mediaPlayer != null)
+            if (mediaPlayer != null) {
                 mediaPlayer.stop();
+                seekbar.setProgress(0);
+            }
             return;
         }
 
@@ -304,6 +302,9 @@ public class MainActivity extends AppCompatActivity {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        putSongDataOnView(playList.get(playlistIndex));
+
         mediaPlayer.start();
     }
 
@@ -326,6 +327,7 @@ public class MainActivity extends AppCompatActivity {
 
             // Check end of playlist
             if (playlistIndex+1 >= playList.size()) {
+                seekbar.setProgress(0);
                 return;
             } else {
                 playlistIndex++;
@@ -342,6 +344,8 @@ public class MainActivity extends AppCompatActivity {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+
+            putSongDataOnView(playList.get(playlistIndex));
 
             mediaPlayer.start();
         }
@@ -391,22 +395,7 @@ public class MainActivity extends AppCompatActivity {
                         return;
                     }
 
-                    MediaMetadataRetriever mmr = new MediaMetadataRetriever();
-                    mmr.setDataSource(new File(songUri.getPath()).getAbsolutePath());
-
-                    String artist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
-                    String song = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
-
-                    if (artist == null)
-                        artist = "<unknown artist>";
-                    if (song == null)
-                        song = "<unknown song>";
-
-                    tvArtist.setText(artist);
-                    tvSong.setText(song);
-
-                    Toast.makeText(this, artist + " - " + song, Toast.LENGTH_SHORT).show();
-
+                    putSongDataOnView(songUri);
 
                     playSelectedSong(songUri);
                 }
@@ -423,26 +412,47 @@ public class MainActivity extends AppCompatActivity {
                         return;
                     }
 
-                    MediaMetadataRetriever mmr = new MediaMetadataRetriever();
-                    mmr.setDataSource(new File(songUri.getPath()).getAbsolutePath());
-
-                    String artist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
-                    String song = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
-
-                    if (artist == null)
-                        artist = "<unknown artist>";
-                    if (song == null)
-                        song = "<unknown song>";
-
-                    tvArtist.setText(artist);
-                    tvSong.setText(song);
-
-
                     playList.add(songUri);
-                    Toast.makeText(this, "Song added to playlist", Toast.LENGTH_SHORT).show();
+                    Song addedSong = obtainSongFromUriMetadata(songUri);
+                    Toast.makeText(this, addedSong.getName() + " added to playlist", Toast.LENGTH_SHORT).show();
                 }
                 break;
         }
     }
 
+    public static Song getCurrentSong() {
+        return currentSong;
+    }
+
+    /**
+     * Sets the current song to that from songUri, and uses its artist and song fields to fill the
+     * respective TextViews.
+     * @param songUri the uri from which obtain the current song
+     */
+    public void putSongDataOnView(Uri songUri) {
+        currentSong = obtainSongFromUriMetadata(songUri);
+
+        tvSong.setText(currentSong.getName());
+        tvArtist.setText(currentSong.getArtist());
+    }
+
+    /**
+     * Takes the Uri of a song and retrieves its title and artist
+     * @param songUri the Uri to take the data from
+     * @return a Song with the title and artist fields taken from the songUri metadata
+     */
+    public Song obtainSongFromUriMetadata(Uri songUri) {
+        MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+        mmr.setDataSource(new File(songUri.getPath()).getAbsolutePath());
+
+        String artist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
+        String title = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
+
+        if (artist == null)
+            artist = "<unknown artist>";
+        if (title == null)
+            title = "<unknown song>";
+
+        return new Song(title, artist);
+    }
 }
