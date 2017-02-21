@@ -8,10 +8,12 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.webkit.MimeTypeMap;
 import android.widget.Button;
 import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
@@ -26,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
 
     private SeekBar seekbar;
 
-    private final int MAX_PLAYLIST_LEN = 2;
+    private final int MAX_PLAYLIST_LEN = 5;
 
     private ArrayList<Uri> playList = new ArrayList<>(MAX_PLAYLIST_LEN);
 
@@ -37,28 +39,37 @@ public class MainActivity extends AppCompatActivity {
 
     Button playOrPauseButton;
 
+    TextView tvArtist;
+    TextView tvSong;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Toast.makeText(this, "onCreate", Toast.LENGTH_SHORT).show();
+
         setContentView(R.layout.activity_main);
 
         mediaPlayer = new MediaPlayer();
         seekbar = (SeekBar) findViewById(R.id.seekbar);
 
         playOrPauseButton = (Button) findViewById(R.id.btn_play_pause);
+        tvArtist = (TextView) findViewById(R.id.tv_artist);
+        tvSong = (TextView) findViewById(R.id.tv_song);
 
         seekbar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
 
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 
-                if (mediaPlayer == null || mediaPlayer.isPlaying() == false) {
+                // This is to prevent the seekbar to change when no song is playing
+                if (mediaPlayer == null) {
                     seekBar.setProgress(0);
                     seekBar.setFocusable(false);
                     return;
                 }
 
-                if (mediaPlayer != null && fromUser)
+                if (fromUser)
                     mediaPlayer.seekTo(progress);
             }
 
@@ -79,6 +90,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
 
+        Toast.makeText(this, "onPause", Toast.LENGTH_SHORT).show();
+
         if (mediaPlayer != null) {
             mediaPlayer.pause();
         }
@@ -88,31 +101,25 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
+        Toast.makeText(this, "onResume", Toast.LENGTH_SHORT).show();
+
         if (mediaPlayer != null)
             mediaPlayer.start();
 
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
-
-        if (mediaPlayer != null) {
-            mediaPlayer.stop();
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
-    }
-
-    @Override
     protected void onDestroy() {
         super.onDestroy();
 
+        Toast.makeText(this, "onDestroy", Toast.LENGTH_SHORT).show();
+
         if (mediaPlayer != null) {
             mediaPlayer.stop();
             mediaPlayer.release();
             mediaPlayer = null;
         }
+
     }
 
     // Pauses or resumes the music
@@ -169,12 +176,7 @@ public class MainActivity extends AppCompatActivity {
 
             mediaPlayer.setDataSource(getApplicationContext(), songUri);
             mediaPlayer.prepare();
-            mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                @Override
-                public void onPrepared(MediaPlayer mp) {
-                    seekbar.setMax(mediaPlayer.getDuration());
-                }
-            });
+            seekbar.setMax(mediaPlayer.getDuration());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -210,9 +212,22 @@ public class MainActivity extends AppCompatActivity {
 
             playlistIndex = 0;
             mediaPlayer = MediaPlayer.create(this, playList.get(playlistIndex));
-            mediaPlayer.start();
             mediaPlayer.setOnCompletionListener(listener);
+            seekbar.setMax(mediaPlayer.getDuration());
+            mediaPlayer.start();
         }
+
+        final Handler handler = new Handler();
+        MainActivity.this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (mediaPlayer != null) {
+                    int currentPosition = mediaPlayer.getCurrentPosition();
+                    seekbar.setProgress(currentPosition);
+                }
+                handler.postDelayed(this, 10);
+            }
+        });
     }
 
     public void previousSongOnPlaylist(View v) {
@@ -242,6 +257,8 @@ public class MainActivity extends AppCompatActivity {
 
             mediaPlayer.setDataSource(getApplicationContext(), playList.get(playlistIndex));
             mediaPlayer.prepare();
+            seekbar.setMax(mediaPlayer.getDuration());
+            seekbar.setProgress(0);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -282,6 +299,8 @@ public class MainActivity extends AppCompatActivity {
 
             mediaPlayer.setDataSource(getApplicationContext(), playList.get(playlistIndex));
             mediaPlayer.prepare();
+            seekbar.setMax(mediaPlayer.getDuration());
+            seekbar.setProgress(0);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -302,15 +321,24 @@ public class MainActivity extends AppCompatActivity {
     private MediaPlayer.OnCompletionListener listener = new MediaPlayer.OnCompletionListener() {
         @Override
         public void onCompletion(MediaPlayer mp) {
-            playlistIndex++;
-            mediaPlayer.release();
-            mediaPlayer = null;
 
-            mediaPlayer = new MediaPlayer();
-            mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+            Toast.makeText(MainActivity.this, "onCompletion", Toast.LENGTH_SHORT).show();
+
+            // Check end of playlist
+            if (playlistIndex+1 >= playList.size()) {
+                return;
+            } else {
+                playlistIndex++;
+            }
+
+            // Go back to the Idle state, so we need to initialize it (set data source) and prepare
+            // it
+            mediaPlayer.reset();
             try {
                 mediaPlayer.setDataSource(getApplicationContext(), playList.get(playlistIndex));
                 mediaPlayer.prepare();
+                seekbar.setMax(mediaPlayer.getDuration());
+                seekbar.setProgress(0);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -374,6 +402,9 @@ public class MainActivity extends AppCompatActivity {
                     if (song == null)
                         song = "<unknown song>";
 
+                    tvArtist.setText(artist);
+                    tvSong.setText(song);
+
                     Toast.makeText(this, artist + " - " + song, Toast.LENGTH_SHORT).show();
 
 
@@ -391,6 +422,20 @@ public class MainActivity extends AppCompatActivity {
                                 Toast.LENGTH_SHORT).show();
                         return;
                     }
+
+                    MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+                    mmr.setDataSource(new File(songUri.getPath()).getAbsolutePath());
+
+                    String artist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
+                    String song = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
+
+                    if (artist == null)
+                        artist = "<unknown artist>";
+                    if (song == null)
+                        song = "<unknown song>";
+
+                    tvArtist.setText(artist);
+                    tvSong.setText(song);
 
 
                     playList.add(songUri);
