@@ -1,5 +1,6 @@
 package com.leonardo.yamp;
 
+import android.content.ContentResolver;
 import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -7,6 +8,7 @@ import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
+import android.webkit.MimeTypeMap;
 import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.Toast;
@@ -40,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
         mediaPlayer = new MediaPlayer();
         seekbar = (SeekBar) findViewById(R.id.seekbar);
 
-        playOrPauseButton = (Button) findViewById(R.id.play_pause_button);
+        playOrPauseButton = (Button) findViewById(R.id.btn_play_pause);
 
         seekbar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
 
@@ -307,6 +309,33 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    /**
+     * Obtains the mimetype of uri, returning it as a String
+     * @param uri the Uri to obtain the mimetype from
+     * @return a String containing the mimetype of the specified Uri
+     */
+    private String getMimeType(Uri uri) {
+        String mimeType = null;
+        if (uri.getScheme().equals(ContentResolver.SCHEME_CONTENT)) {
+            ContentResolver cr = getApplicationContext().getContentResolver();
+            mimeType = cr.getType(uri);
+        } else {
+            String fileExtension = MimeTypeMap.getFileExtensionFromUrl(uri.toString());
+            mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExtension.toLowerCase());
+        }
+
+        return mimeType;
+    }
+
+    /**
+     * Checks if the string representing a mimetype for a file is for audio only
+     * @param mimeType String representing the mimetype
+     * @return true if the mimetype is audio, false otherwise
+     */
+    private boolean isAudioFile(String mimeType) {
+        return (mimeType != null && mimeType.contains("audio"));
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
@@ -314,12 +343,31 @@ public class MainActivity extends AppCompatActivity {
             case PICK_SONG_REQUEST:
                 if (resultCode == RESULT_OK) {
                     Uri songUri = data.getData();
+                    String mimeType = getMimeType(songUri);
+
+                    // Check that the user effectively selected an audio file; we can "play" and image.
+                    if (!isAudioFile(mimeType)) {
+                        Toast.makeText(this, "Error: You can only select audio files (mp3, mp3, mpeg, etc)",
+                                Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
                     playSelectedSong(songUri);
                 }
                 break;
+
             case ADD_SONG_TO_PLAYLIST_REQUEST:
                 if (resultCode == RESULT_OK) {
                     Uri songUri = data.getData();
+                    String mimeType = getMimeType(songUri);
+
+                    if (!isAudioFile(mimeType)) {
+                        Toast.makeText(this, "Error: You can only select audio files (mp3, mp3, mpeg, etc)",
+                                Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+
                     playList.add(songUri);
                     Toast.makeText(this, "Song added to playlist", Toast.LENGTH_SHORT).show();
                 }
