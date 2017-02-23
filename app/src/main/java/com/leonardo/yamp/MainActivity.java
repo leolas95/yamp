@@ -9,6 +9,7 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.webkit.MimeTypeMap;
 import android.widget.Button;
@@ -23,6 +24,8 @@ import java.util.ArrayList;
 import android.os.Handler;
 
 public class MainActivity extends AppCompatActivity {
+
+    private static final String TAG = "MainActivity";
 
     private MediaPlayer mediaPlayer;
 
@@ -371,18 +374,23 @@ public class MainActivity extends AppCompatActivity {
                 if (resultCode == RESULT_OK) {
 
                     if (data == null) {
-                        Toast.makeText(this, "data = null", Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "onActivityResult: Intent data = null");
                         return;
                     }
 
-                    Toast.makeText(this, "result ok", Toast.LENGTH_SHORT).show();
                     Uri songUri = data.getData();
-                    String mimeType = getMimeType(songUri);
 
-                    Toast.makeText(this, "result ok, song uri = " + songUri, Toast.LENGTH_LONG).show();
+                    if (songUri.toString().contains("%20")) {
+                        Log.d(TAG, "songUri contains \'%20\'");
+                        songUri = Uri.parse(songUri.toString().replace("%20", " "));
+                        Log.d(TAG, "songUri now = " + songUri.toString());
+                    }
+
+                    String mimeType = getMimeType(songUri);
+                    Log.d(TAG, "getMimeType went OK");
 
                     if (mimeType == null) {
-                        Toast.makeText(this, "MIMETYPE NULL", Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "onActivityResult: mimetype null");
                         return;
                     }
 
@@ -393,6 +401,7 @@ public class MainActivity extends AppCompatActivity {
                         return;
                     }
 
+                    Log.d(TAG, "So far so good");
                     putSongDataOnView(songUri);
 
                     playSelectedSong(songUri);
@@ -406,18 +415,28 @@ public class MainActivity extends AppCompatActivity {
 
             case ADD_SONG_TO_PLAYLIST_REQUEST:
                 if (resultCode == RESULT_OK) {
-                    Toast.makeText(this, "result ok", Toast.LENGTH_SHORT).show();
+
+
                     Uri songUri = data.getData();
+
+                    if (songUri.toString().contains("%20")) {
+                        Log.d(TAG, "songUri contains \'%20\'");
+                        songUri = Uri.parse(songUri.toString().replace("%20", " "));
+                        Log.d(TAG, "songUri now = " + songUri.toString());
+                    }
+
                     String mimeType = getMimeType(songUri);
+                    Log.d(TAG, "getMimeType went OK");
 
                     if (mimeType == null) {
-                        Toast.makeText(this, "MIMETYPE NULL", Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "onActivityResult: mimetype null");
                         return;
                     }
 
                     if (!isAudioFile(mimeType)) {
                         Toast.makeText(this, "Error: You can only select audio files (mp3, mp3, mpeg, etc)",
                                 Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "ADD_SONG_TO_PLAYLIST_REQUEST: mimetype = " + mimeType);
                         return;
                     }
 
@@ -439,34 +458,25 @@ public class MainActivity extends AppCompatActivity {
         String mimeType = null;
 
         if (uri.getScheme().equals(ContentResolver.SCHEME_CONTENT)) {
-            Toast.makeText(this, "if", Toast.LENGTH_SHORT).show();
+            Log.d(TAG, "getMimeType: uri starts with content://");
             ContentResolver cr = getApplicationContext().getContentResolver();
+
+            Log.d(TAG, "getMimeType: uri = " + uri.toString());
             mimeType = cr.getType(uri);
+
         } else {
-            Toast.makeText(this, "else", Toast.LENGTH_SHORT).show();
-
-            Toast.makeText(this, "uri = " + uri, Toast.LENGTH_LONG).show();
-            Toast.makeText(this, "uri = " + uri, Toast.LENGTH_LONG).show();
-
-            // FIXME: ESTO DA ERROR. POR ALGUNA RAZON NO ENCUENTRA LA EXTENSION DEL ARCHIVO
-            //String fileExtension = MimeTypeMap.getFileExtensionFromUrl(uri.toString());
-
-            String fileExtension = uri.toString().substring(uri.toString().lastIndexOf(".") + 1);
-
-            if (fileExtension.length() > 2) {
-                Toast.makeText(this, "aksdkadsa", Toast.LENGTH_SHORT).show();
-                return "audio";
-            }
-
-
-            Toast.makeText(this, "fileext = " + fileExtension, Toast.LENGTH_LONG).show();
-
-            // Aqui se le esta asignando null porque no encuentra la extension del archivo
+            String fileExtension = getFileExtensionFromUri(uri);
+            Log.d(TAG, "getMimeType: fileExt = " + fileExtension);
             mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExtension.toLowerCase());
         }
 
-        Toast.makeText(this, "returning Mimetype = " + mimeType, Toast.LENGTH_SHORT).show();
+
+        Log.d(TAG, "Returning mimetype = " + mimeType);
         return mimeType;
+    }
+
+    private String getFileExtensionFromUri(Uri uri) {
+        return uri.toString().substring(uri.toString().lastIndexOf(".") + 1);
     }
 
     /**
@@ -478,16 +488,14 @@ public class MainActivity extends AppCompatActivity {
         return (mimeType != null && mimeType.contains("audio"));
     }
 
-    public static Song getCurrentSong() {
-        return currentSong;
-    }
-
     /**
      * Sets the current song to that from songUri, and uses its artist and song fields to fill the
      * respective TextViews.
      * @param songUri the uri from which obtain the current song
      */
     public void putSongDataOnView(Uri songUri) {
+
+        Log.d(TAG, "calling obtainSongFromUriMetadata");
         currentSong = obtainSongFromUriMetadata(songUri);
 
         tvSong.setText(currentSong.getName());
@@ -504,16 +512,30 @@ public class MainActivity extends AppCompatActivity {
      */
     public Song obtainSongFromUriMetadata(Uri songUri) {
         MediaMetadataRetriever mmr = new MediaMetadataRetriever();
-        mmr.setDataSource(new File(songUri.getPath()).getAbsolutePath());
 
-        String artist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
-        String title = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
+        Log.d(TAG, "obtainSongFromUriMetadata: songUri received: " + songUri);
 
-        if (artist == null)
-            artist = "<unknown artist>";
-        if (title == null)
-            title = "<unknown song>";
+        String absPath = new File(songUri.getPath()).getAbsolutePath();
+        Log.d(TAG, "absPath = " + absPath);
 
-        return new Song(title, artist, songUri);
+        try {
+            mmr.setDataSource(absPath);
+
+            String artist = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
+            String title = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
+
+            if (artist == null)
+                artist = "<unknown artist>";
+            if (title == null)
+                title = "<unknown song>";
+
+            return new Song(title, artist, songUri);
+        } catch (IllegalArgumentException e) {
+            Log.e(TAG, "IllegalArgumentException on obtainSongFromUriMetadata");
+            Log.e(TAG, "absPath = " + absPath);
+            Log.e(TAG, "songUri = " + songUri);
+            return new Song("<unknown song>", "<unknown artist>", songUri);
+        }
     }
+
 }
