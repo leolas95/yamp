@@ -2,6 +2,8 @@ package com.leonardo.yamp;
 
 import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -321,8 +323,10 @@ public class MainActivity extends AppCompatActivity {
      */
     public void addToPlaylist(View v) {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType("audio/*");
+        intent.setType("*/*");
         intent.addCategory(Intent.CATEGORY_OPENABLE);
+
+        Toast.makeText(this, "Starting activity for result", Toast.LENGTH_SHORT).show();
         startActivityForResult(intent, ADD_SONG_TO_PLAYLIST_REQUEST);
     }
 
@@ -358,33 +362,6 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    /**
-     * Obtains the mimetype of uri, returning it as a String
-     * @param uri the Uri to obtain the mimetype from
-     * @return a String containing the mimetype of the specified Uri
-     */
-    private String getMimeType(Uri uri) {
-        String mimeType = null;
-
-        if (uri.getScheme().equals(ContentResolver.SCHEME_CONTENT)) {
-            ContentResolver cr = getApplicationContext().getContentResolver();
-            mimeType = cr.getType(uri);
-        } else {
-            String fileExtension = MimeTypeMap.getFileExtensionFromUrl(uri.toString());
-            mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExtension.toLowerCase());
-        }
-
-        return mimeType;
-    }
-
-    /**
-     * Checks if the string representing a mimetype for a file is for audio only
-     * @param mimeType String representing the mimetype
-     * @return true if the mimetype is audio, false otherwise
-     */
-    private boolean isAudioFile(String mimeType) {
-        return (mimeType != null && mimeType.contains("audio"));
-    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -392,26 +369,51 @@ public class MainActivity extends AppCompatActivity {
         switch (requestCode) {
             case PICK_SONG_REQUEST:
                 if (resultCode == RESULT_OK) {
+
+                    if (data == null) {
+                        Toast.makeText(this, "data = null", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    Toast.makeText(this, "result ok", Toast.LENGTH_SHORT).show();
                     Uri songUri = data.getData();
                     String mimeType = getMimeType(songUri);
 
-                    // Check that the user effectively selected an audio file; we can "play" and image.
+                    Toast.makeText(this, "result ok, song uri = " + songUri, Toast.LENGTH_LONG).show();
+
+                    if (mimeType == null) {
+                        Toast.makeText(this, "MIMETYPE NULL", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    // Check that the user effectively selected an audio file; we can't "play" and image.
                     if (!isAudioFile(mimeType)) {
-                        Toast.makeText(this, "Error: You can only select audio files (mp3, mp3, mpeg, etc)",
-                                Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Error: You can only select audio files (mp3, mp3, mpeg, etc)"
+                                + " --> " + mimeType, Toast.LENGTH_SHORT).show();
                         return;
                     }
 
                     putSongDataOnView(songUri);
 
                     playSelectedSong(songUri);
+                } else if (resultCode == RESULT_CANCELED) {
+                    Toast.makeText(this, "Operation canceled", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "result NOT ok", Toast.LENGTH_SHORT).show();
                 }
+                
                 break;
 
             case ADD_SONG_TO_PLAYLIST_REQUEST:
                 if (resultCode == RESULT_OK) {
+                    Toast.makeText(this, "result ok", Toast.LENGTH_SHORT).show();
                     Uri songUri = data.getData();
                     String mimeType = getMimeType(songUri);
+
+                    if (mimeType == null) {
+                        Toast.makeText(this, "MIMETYPE NULL", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
 
                     if (!isAudioFile(mimeType)) {
                         Toast.makeText(this, "Error: You can only select audio files (mp3, mp3, mpeg, etc)",
@@ -428,6 +430,54 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Obtains the mimetype of uri, returning it as a String
+     * @param uri the Uri to obtain the mimetype from
+     * @return a String containing the mimetype of the specified Uri
+     */
+    private String getMimeType(Uri uri) {
+        String mimeType = null;
+
+        if (uri.getScheme().equals(ContentResolver.SCHEME_CONTENT)) {
+            Toast.makeText(this, "if", Toast.LENGTH_SHORT).show();
+            ContentResolver cr = getApplicationContext().getContentResolver();
+            mimeType = cr.getType(uri);
+        } else {
+            Toast.makeText(this, "else", Toast.LENGTH_SHORT).show();
+
+            Toast.makeText(this, "uri = " + uri, Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "uri = " + uri, Toast.LENGTH_LONG).show();
+
+            // FIXME: ESTO DA ERROR. POR ALGUNA RAZON NO ENCUENTRA LA EXTENSION DEL ARCHIVO
+            //String fileExtension = MimeTypeMap.getFileExtensionFromUrl(uri.toString());
+
+            String fileExtension = uri.toString().substring(uri.toString().lastIndexOf(".") + 1);
+
+            if (fileExtension.length() > 2) {
+                Toast.makeText(this, "aksdkadsa", Toast.LENGTH_SHORT).show();
+                return "audio";
+            }
+
+
+            Toast.makeText(this, "fileext = " + fileExtension, Toast.LENGTH_LONG).show();
+
+            // Aqui se le esta asignando null porque no encuentra la extension del archivo
+            mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExtension.toLowerCase());
+        }
+
+        Toast.makeText(this, "returning Mimetype = " + mimeType, Toast.LENGTH_SHORT).show();
+        return mimeType;
+    }
+
+    /**
+     * Checks if the string representing a mimetype for a file is for audio only
+     * @param mimeType String representing the mimetype
+     * @return true if the mimetype is audio, false otherwise
+     */
+    private boolean isAudioFile(String mimeType) {
+        return (mimeType != null && mimeType.contains("audio"));
+    }
+
     public static Song getCurrentSong() {
         return currentSong;
     }
@@ -441,7 +491,10 @@ public class MainActivity extends AppCompatActivity {
         currentSong = obtainSongFromUriMetadata(songUri);
 
         tvSong.setText(currentSong.getName());
+        tvSong.setTextColor(Color.GREEN);
+
         tvArtist.setText(currentSong.getArtist());
+        tvArtist.setTextColor(Color.GREEN);
     }
 
     /**
