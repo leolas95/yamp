@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.webkit.MimeTypeMap;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.SeekBar;
@@ -92,6 +93,14 @@ public class MainActivity extends AppCompatActivity {
         adapter = new PlaylistViewAdapter(this, playList);
         playlistListView = (ListView) findViewById(R.id.listvPlaylist);
         playlistListView.setAdapter(adapter);
+
+        playlistListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Song songToPlay = playList.get(position);
+                playSelectedSong(songToPlay.getUri());
+            }
+        });
     }
 
 
@@ -134,12 +143,12 @@ public class MainActivity extends AppCompatActivity {
         // Was playing, pause it
         if (mediaPlayer.isPlaying()) {
             mediaPlayer.pause();
-            playOrPauseButton.setText("Play");
+            playOrPauseButton.setText(R.string.play);
         }
         // Was paused, play
         else {
             mediaPlayer.start();
-            playOrPauseButton.setText("Pause");
+            playOrPauseButton.setText(R.string.pause);
         }
     }
 
@@ -149,6 +158,9 @@ public class MainActivity extends AppCompatActivity {
             mediaPlayer.stop();
             mediaPlayer = null;
         }
+
+        tvArtist.setText("");
+        tvSong.setText("");
     }
 
     // Let the user select a song from the device
@@ -196,6 +208,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        putSongDataOnView(songUri);
         mediaPlayer.start();
     }
 
@@ -274,6 +287,10 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    /**
+     * Advances to the next song in the playlist, checking that it doesn't go out the list limit
+     * @param v NOT USED - Necessary for methods defined on the onClick property in xml of buttons
+     */
     public void nextSongOnPlaylist(View v) {
 
         if (playList.isEmpty()) {
@@ -329,7 +346,7 @@ public class MainActivity extends AppCompatActivity {
         intent.setType("*/*");
         intent.addCategory(Intent.CATEGORY_OPENABLE);
 
-        Toast.makeText(this, "Starting activity for result", Toast.LENGTH_SHORT).show();
+        Log.d(TAG, "addToPlaylist() --> Starting activity for result");
         startActivityForResult(intent, ADD_SONG_TO_PLAYLIST_REQUEST);
     }
 
@@ -382,6 +399,7 @@ public class MainActivity extends AppCompatActivity {
 
                     if (songUri.toString().contains("%20")) {
                         Log.d(TAG, "songUri contains \'%20\'");
+                        Log.d(TAG, "songUri before = " + songUri.toString());
                         songUri = Uri.parse(songUri.toString().replace("%20", " "));
                         Log.d(TAG, "songUri now = " + songUri.toString());
                     }
@@ -408,6 +426,7 @@ public class MainActivity extends AppCompatActivity {
                 } else if (resultCode == RESULT_CANCELED) {
                     Toast.makeText(this, "Operation canceled", Toast.LENGTH_SHORT).show();
                 } else {
+                    Log.e(TAG, "PICK_SONG_REQUEST: Error");
                     Toast.makeText(this, "result NOT ok", Toast.LENGTH_SHORT).show();
                 }
                 
@@ -416,11 +435,16 @@ public class MainActivity extends AppCompatActivity {
             case ADD_SONG_TO_PLAYLIST_REQUEST:
                 if (resultCode == RESULT_OK) {
 
+                    if (data == null) {
+                        Log.e(TAG, "onActivityResult: Intent data = null");
+                        return;
+                    }
 
                     Uri songUri = data.getData();
 
                     if (songUri.toString().contains("%20")) {
                         Log.d(TAG, "songUri contains \'%20\'");
+                        Log.d(TAG, "songUri before = " + songUri.toString());
                         songUri = Uri.parse(songUri.toString().replace("%20", " "));
                         Log.d(TAG, "songUri now = " + songUri.toString());
                     }
@@ -444,6 +468,10 @@ public class MainActivity extends AppCompatActivity {
                     playList.add(newSong);
                     adapter.notifyDataSetChanged();
                     Toast.makeText(this, newSong.getName() + " added to playlist", Toast.LENGTH_SHORT).show();
+                } else if (resultCode == RESULT_CANCELED) {
+                    Toast.makeText(this, "Operation cancelled", Toast.LENGTH_SHORT).show();
+                } else {
+                    Log.e(TAG, "ADD_SONG_TO_PLAYLIST_REQUEST: Error");
                 }
                 break;
         }
@@ -475,6 +503,12 @@ public class MainActivity extends AppCompatActivity {
         return mimeType;
     }
 
+    /**
+     * Obtains the file extension of a file from a given Uri, and returns it as a String without
+     * the leading '.' (e.g: mp3, not .mp3)
+     * @param uri the uri from which to obtain the file extension
+     * @return the file extension as a String
+     */
     private String getFileExtensionFromUri(Uri uri) {
         return uri.toString().substring(uri.toString().lastIndexOf(".") + 1);
     }
@@ -537,5 +571,4 @@ public class MainActivity extends AppCompatActivity {
             return new Song("<unknown song>", "<unknown artist>", songUri);
         }
     }
-
 }

@@ -8,4 +8,7 @@
     <string name="previous_song_on_playlist">Previous song in playlist</string>
     <string name="next_song_on_playlist">Next song in playlist</string>
     <string name="add_to_playlist">Add song to playlist</string>
+
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
 </resources>
