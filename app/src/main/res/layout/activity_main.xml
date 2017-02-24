@@ -12,42 +12,42 @@
     <!-- Play/Pause button -->
     <Button
         android:id="@+id/btn_play_pause"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/pause_music"
         android:onClick="pauseMusic"/>
 
     <!-- Stop button -->
     <Button
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/stop_music"
         android:onClick="stopMusic"/>
 
     <!-- Search song button -->
     <Button
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/search_song"
         android:onClick="searchSong"/>
 
     <!-- Start playlist button -->
     <Button
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/start_playlist"
         android:onClick="startPlaylist"/>
 
     <!-- Previous song on playlist button -->
     <Button
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/previous_song_on_playlist"
         android:onClick="previousSongOnPlaylist"/>
 
     <!-- Next song on playlist button -->
     <Button
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/next_song_on_playlist"
         android:onClick="nextSongOnPlaylist"/>
@@ -55,7 +55,7 @@
     <!-- Add song to playlist button -->
     <Button
         android:id="@+id/btn_add_to_playlist"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/add_to_playlist"
         android:onClick="addToPlaylist"/>

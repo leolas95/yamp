@@ -34,7 +34,7 @@ public class MainActivity extends AppCompatActivity {
 
     private SeekBar seekbar;
 
-    private final int MAX_PLAYLIST_LEN = 5;
+    private final int MAX_PLAYLIST_LEN = 10;
     private ArrayList<Song> playList = new ArrayList<>(MAX_PLAYLIST_LEN);
     private int playlistIndex = -1;
 
